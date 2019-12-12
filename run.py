@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras import optimizers
@@ -14,8 +15,8 @@ dataset_path = Path("./resources")
 image_root_path = dataset_path / "common-mobile-web-app-icons"
 
 
-def train(df, log_path, x_col, y_col):
-    n_splits = 4
+def train(df, log_path, x_col, y_col, is_test=True):
+    n_splits = 1
     random_state = 1224
     # multiple class and
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True,
@@ -24,7 +25,7 @@ def train(df, log_path, x_col, y_col):
     width, height = 224, 224
     target_size = (height, width)
     num_channels = 3
-    epochs = 3
+    epochs = 100
     lr = 0.001
     batch_size = 64
     num_classes = len(df[y_col].unique())
@@ -35,6 +36,10 @@ def train(df, log_path, x_col, y_col):
         print("Fold: {}".format(fold_idx))
         #     print(df.loc[train_idx].shape)
         #     print(df.loc[val_idx].shape)
+        if is_test:
+            # May not be included in all class
+            train_idx = np.random.choice(train_idx, batch_size * 200)
+            val_idx = np.random.choice(val_idx, batch_size * 100)
         model = build_model(n_classes=num_classes,
                             input_shapes=(height, width, num_channels))
         train_gen = ImageDataGenerator(
@@ -114,7 +119,8 @@ def main():
     drop_indexes = df[df["class"].str.contains("|".join(drop_classes))].index
     df.drop(index=drop_indexes, inplace=True)
 
-    train(df, log_path=log_path, x_col=x_col_name, y_col=y_col_name)
+    train(df, log_path=log_path, x_col=x_col_name, y_col=y_col_name,
+          is_test=False)
 
 
 if __name__ == '__main__':
