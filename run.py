@@ -2,7 +2,7 @@ from pathlib import Path
 
 from dataset import create_df
 
-dataset_path = Path("../resources")
+dataset_path = Path("./resources")
 image_root_path = dataset_path / "common-mobile-web-app-icons"
 
 
