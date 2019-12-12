@@ -1,0 +1,15 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+tensorflow-gpu = "==2.0.0"
+pandas = "==0.25.3"
+pillow = "==6.2.1"
+scikit-learn = "==0.22"
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"
