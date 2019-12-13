@@ -96,7 +96,7 @@ def train(df, log_path, x_col, y_col, is_test=True):
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
+    plt.savefig(str(image_root_path / "Plot_accuracy_values.jpg"))
 
     # Plot training & validation loss values
     plt.plot(history.history['loss'])
@@ -105,7 +105,7 @@ def train(df, log_path, x_col, y_col, is_test=True):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig(str(image_root_path / "metrics_and_loss.jpg"))
+    plt.savefig(str(image_root_path / "Plot_loss_values.jpg"))
     # model.evaluate_generator(valid_generator)
 
 
