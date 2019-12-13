@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold, train_test_split
@@ -49,14 +50,15 @@ def train(df, log_path, x_col, y_col, is_test=True):
                         input_shapes=(height, width, num_channels))
     train_gen = ImageDataGenerator(
         preprocessing_function=mobilenet.preprocess_input)
-    train_generator = train_gen.flow_from_dataframe(pd.concat([x_train, y_train],
-                                                              axis=1),
-                                                    x_col=x_col,
-                                                    y_col=y_col,
-                                                    target_size=target_size,
-                                                    batch_size=batch_size,
-                                                    class_mode='categorical',
-                                                    subset='training')
+    train_generator = train_gen.flow_from_dataframe(
+        pd.concat([x_train, y_train],
+                  axis=1),
+        x_col=x_col,
+        y_col=y_col,
+        target_size=target_size,
+        batch_size=batch_size,
+        class_mode='categorical',
+        subset='training')
     valid_gen = ImageDataGenerator(
         preprocessing_function=mobilenet.preprocess_input)
     valid_generator = valid_gen.flow_from_dataframe(pd.concat([x_val, y_val],
@@ -88,22 +90,22 @@ def train(df, log_path, x_col, y_col, is_test=True):
                                   )
 
     # Plot training & validation accuracy values
-    # plt.plot(history.history['acc'])
-    # plt.plot(history.history['val_acc'])
-    # plt.title('Model accuracy')
-    # plt.ylabel('Accuracy')
-    # plt.xlabel('Epoch')
-    # plt.legend(['Train', 'Test'], loc='upper left')
-    # plt.show()
-    #
-    # # Plot training & validation loss values
-    # plt.plot(history.history['loss'])
-    # plt.plot(history.history['val_loss'])
-    # plt.title('Model loss')
-    # plt.ylabel('Loss')
-    # plt.xlabel('Epoch')
-    # plt.legend(['Train', 'Test'], loc='upper left')
-    # plt.show()
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.show()
+
+    # Plot training & validation loss values
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.savefig(str(image_root_path / "metrics_and_loss.jpg"))
     # model.evaluate_generator(valid_generator)
 
 
