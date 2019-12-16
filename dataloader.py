@@ -12,6 +12,8 @@ from tensorflow.python.keras.utils.data_utils import Sequence
 
 warnings.filterwarnings('ignore')
 
+Height, Width = 224, 224
+
 
 class GrayToRGB(ImageOnlyTransform):
     """
