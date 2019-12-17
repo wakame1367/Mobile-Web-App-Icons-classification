@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers
 from tensorflow.keras.applications import mobilenet
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
@@ -14,6 +13,16 @@ from model import build_model
 
 dataset_path = Path("./resources")
 image_root_path = dataset_path / "common-mobile-web-app-icons"
+# common using mobile app UI labels
+USE_LABELS = ['arrow_left', 'notifications', 'play', 'info', 'mail',
+              'globe', 'upload', 'music', 'close', 'user', 'settings', 'home',
+              'fast_forward', 'trash', 'question', 'map', 'eye', 'check_mark',
+              'sort', 'overflow_menu', 'minimize', 'save', 'delete',
+              'maximize', 'download', 'share', 'external_link', 'thumbs_up',
+              'search', 'arrow_right', 'crop', 'camera', 'refresh', 'add',
+              'volume', 'favorite', 'menu', 'edit', 'fab', 'link', 'arrow_up',
+              'arrow_down', 'tag', 'warning', 'bookmark', 'cart', 'cloud',
+              'filter']
 
 
 def train(df, log_path, x_col, y_col, is_test=True):
@@ -28,11 +37,12 @@ def train(df, log_path, x_col, y_col, is_test=True):
     num_channels = 3
     epochs = 100
     lr = 0.001
-    batch_size = 64
+    batch_size = 128
+    test_size = 0.2
     num_classes = len(df[y_col].unique())
     opt = optimizers.Adam(lr=lr)
     x_train, x_val, y_train, y_val = train_test_split(df[x_col], df[y_col],
-                                                      test_size=0.3,
+                                                      test_size=test_size,
                                                       shuffle=True,
                                                       random_state=random_state,
                                                       stratify=df[y_col])
