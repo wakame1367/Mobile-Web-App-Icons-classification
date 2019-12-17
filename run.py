@@ -12,7 +12,14 @@ from dataset import create_df
 from model import build_model
 
 dataset_path = Path("./resources")
+# Download from Kaggle Dataset and place it in a suitable directory.
+# https://www.kaggle.com/testdotai/common-mobile-web-app-icons
 image_root_path = dataset_path / "common-mobile-web-app-icons"
+log_path = dataset_path / "logs"
+
+if not log_path.exists():
+    log_path.mkdir()
+
 # common using mobile app UI labels
 USE_LABELS = ['arrow_left', 'notifications', 'play', 'info', 'mail',
               'globe', 'upload', 'music', 'close', 'user', 'settings', 'home',
@@ -23,6 +30,26 @@ USE_LABELS = ['arrow_left', 'notifications', 'play', 'info', 'mail',
               'volume', 'favorite', 'menu', 'edit', 'fab', 'link', 'arrow_up',
               'arrow_down', 'tag', 'warning', 'bookmark', 'cart', 'cloud',
               'filter']
+
+
+def plot_history(history):
+    # Plot training & validation accuracy values
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.savefig(str(log_path / "Plot_accuracy_values.jpg"))
+
+    # Plot training & validation loss values
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.savefig(str(log_path / "Plot_loss_values.jpg"))
 
 
 def train(df, log_path, x_col, y_col, is_test=True):
@@ -99,23 +126,7 @@ def train(df, log_path, x_col, y_col, is_test=True):
                                   callbacks=callbacks
                                   )
 
-    # Plot training & validation accuracy values
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig(str(image_root_path / "Plot_accuracy_values.jpg"))
-
-    # Plot training & validation loss values
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('Model loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig(str(image_root_path / "Plot_loss_values.jpg"))
+    plot_history(history)
     # model.evaluate_generator(valid_generator)
 
 
