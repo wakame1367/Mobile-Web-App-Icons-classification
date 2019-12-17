@@ -52,7 +52,7 @@ def plot_history(history):
     plt.savefig(str(log_path / "Plot_loss_values.jpg"))
 
 
-def train(df, log_path, x_col, y_col, is_test=True):
+def train(df, x_col, y_col, is_test=True):
     # n_splits = 4
     random_state = 1224
     # multiple class and
@@ -131,9 +131,6 @@ def train(df, log_path, x_col, y_col, is_test=True):
 
 
 def main():
-    log_path = dataset_path / "logs"
-    if not log_path.exists():
-        log_path.mkdir()
     df_path = dataset_path / "data.csv"
     if df_path.exists():
         df = pd.read_csv(df_path)
@@ -146,8 +143,7 @@ def main():
     # https://stackoverflow.com/questions/26577516/how-to-test-if-a-string-contains-one-of-the-substrings-in-a-list-in-pandas
     drop_indexes = df[~df[y_col_name].str.contains("|".join(USE_LABELS))].index
     df.drop(index=drop_indexes, inplace=True)
-    train(df, log_path=log_path, x_col=x_col_name, y_col=y_col_name,
-          is_test=False)
+    train(df, x_col=x_col_name, y_col=y_col_name, is_test=False)
 
 
 if __name__ == '__main__':
