@@ -67,7 +67,7 @@ def train(df, x_col, y_col, is_test=True):
     batch_size = 128
     test_size = 0.2
     num_classes = len(df[y_col].unique())
-    opt = optimizers.Adam(lr=lr)
+    opt = optimizers.SGD(lr=lr)
     x_train, x_val, y_train, y_val = train_test_split(df[x_col], df[y_col],
                                                       test_size=test_size,
                                                       shuffle=True,
@@ -105,7 +105,7 @@ def train(df, x_col, y_col, is_test=True):
                                                     target_size=target_size,
                                                     batch_size=batch_size,
                                                     class_mode='categorical',
-                                                    subset='training')
+                                                    subset='validation')
     model.compile(optimizer=opt,
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
