@@ -131,13 +131,10 @@ def main():
         df.to_csv(df_path, index=False)
     x_col_name = "image_path"
     y_col_name = "class"
-    thresh_count = 100
-    d = df[y_col_name].value_counts() < thresh_count
-    drop_classes = list(d[d == True].index)
-    # https://stackoverflow.com/questions/26577516/how-to-test-if-a-string-contains-one-of-the-substrings-in-a-list-in-pandas
-    drop_indexes = df[df["class"].str.contains("|".join(drop_classes))].index
-    df.drop(index=drop_indexes, inplace=True)
 
+    # https://stackoverflow.com/questions/26577516/how-to-test-if-a-string-contains-one-of-the-substrings-in-a-list-in-pandas
+    drop_indexes = df[~df[y_col_name].str.contains("|".join(USE_LABELS))].index
+    df.drop(index=drop_indexes, inplace=True)
     train(df, log_path=log_path, x_col=x_col_name, y_col=y_col_name,
           is_test=False)
 
