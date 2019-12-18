@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers
-from tensorflow.keras.applications import mobilenet
+from tensorflow.keras.applications import resnet_v2
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
@@ -29,7 +29,7 @@ USE_LABELS = ['arrow_left', 'notifications', 'play', 'info', 'mail',
               'search', 'arrow_right', 'crop', 'camera', 'refresh', 'add',
               'volume', 'favorite', 'menu', 'edit', 'fab', 'link', 'arrow_up',
               'arrow_down', 'tag', 'warning', 'bookmark', 'cart', 'cloud',
-              'filter']
+              'filter', 'other']
 
 
 def plot_history(history):
@@ -52,7 +52,7 @@ def plot_history(history):
     plt.savefig(str(log_path / "Plot_loss_values.jpg"))
 
 
-def train(df, x_col, y_col, is_test=True):
+def train(model, preprocess_func, df, x_col, y_col, is_test=True):
     # n_splits = 4
     random_state = 1224
     # multiple class and
@@ -64,10 +64,9 @@ def train(df, x_col, y_col, is_test=True):
     num_channels = 3
     epochs = 100
     lr = 0.001
-    batch_size = 128
+    batch_size = 32
     test_size = 0.2
-    num_classes = len(df[y_col].unique())
-    opt = optimizers.SGD(lr=lr)
+    opt = optimizers.RMSprop(lr=lr)
     x_train, x_val, y_train, y_val = train_test_split(df[x_col], df[y_col],
                                                       test_size=test_size,
                                                       shuffle=True,
@@ -83,10 +82,12 @@ def train(df, x_col, y_col, is_test=True):
         # train_idx = np.random.choice(x_train, batch_size * 200)
         # val_idx = np.random.choice(val_idx, batch_size * 100)
         pass
-    model = build_model(n_classes=num_classes,
-                        input_shapes=(height, width, num_channels))
-    train_gen = ImageDataGenerator(
-        preprocessing_function=mobilenet.preprocess_input)
+    train_gen = ImageDataGenerator(rotation_range=45,
+                                   width_shift_range=.15,
+                                   height_shift_range=.15,
+                                   horizontal_flip=True,
+                                   zoom_range=0.5,
+                                   preprocessing_function=preprocess_func)
     train_generator = train_gen.flow_from_dataframe(
         pd.concat([x_train, y_train],
                   axis=1),
@@ -97,7 +98,7 @@ def train(df, x_col, y_col, is_test=True):
         class_mode='categorical',
         subset='training')
     valid_gen = ImageDataGenerator(
-        preprocessing_function=mobilenet.preprocess_input)
+        preprocessing_function=preprocess_func)
     valid_generator = valid_gen.flow_from_dataframe(pd.concat([x_val, y_val],
                                                               axis=1),
                                                     x_col=x_col,
@@ -105,7 +106,7 @@ def train(df, x_col, y_col, is_test=True):
                                                     target_size=target_size,
                                                     batch_size=batch_size,
                                                     class_mode='categorical',
-                                                    subset='validation')
+                                                    subset='training')
     model.compile(optimizer=opt,
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
@@ -116,8 +117,8 @@ def train(df, x_col, y_col, is_test=True):
     model_chk = ModelCheckpoint(filepath=str(chk_path),
                                 save_best_only=True,
                                 save_weights_only=True)
-    ealry_stopping = EarlyStopping()
-    callbacks = [model_chk, ealry_stopping]
+    early_stopping = EarlyStopping(patience=10)
+    callbacks = [model_chk, early_stopping]
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=step_size_train,
                                   validation_data=valid_generator,
@@ -139,11 +140,23 @@ def main():
         df.to_csv(df_path, index=False)
     x_col_name = "image_path"
     y_col_name = "class"
+    num_classes = len(USE_LABELS)
+    width, height = 224, 224
+    num_channels = 3
+    input_shapes = (height, width, num_channels)
+    base_model = resnet_v2.ResNet101V2(include_top=False,
+                                       weights='imagenet',
+                                       input_shape=input_shapes)
+    model = build_model(base_model, n_classes=num_classes)
 
-    # https://stackoverflow.com/questions/26577516/how-to-test-if-a-string-contains-one-of-the-substrings-in-a-list-in-pandas
-    drop_indexes = df[~df[y_col_name].str.contains("|".join(USE_LABELS))].index
+    labels = set(df[y_col_name].unique()).difference(set(USE_LABELS))
+    drop_indexes = pd.Index([])
+    for label in labels:
+        drop_index = df[df[y_col_name] == label].index
+        drop_indexes = drop_indexes.union(drop_index)
     df.drop(index=drop_indexes, inplace=True)
-    train(df, x_col=x_col_name, y_col=y_col_name, is_test=False)
+    train(preprocess_func=resnet_v2.preprocess_input, df=df, model=model,
+          x_col=x_col_name, y_col=y_col_name, is_test=False)
 
 
 if __name__ == '__main__':
