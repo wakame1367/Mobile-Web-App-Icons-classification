@@ -5,7 +5,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers
 from tensorflow.keras.applications import resnet_v2
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, \
+    ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from dataset import create_df
@@ -63,10 +64,15 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
     target_size = (height, width)
     num_channels = 3
     epochs = 100
-    lr = 0.001
+    lr = 0.002
     batch_size = 32
     test_size = 0.2
-    opt = optimizers.RMSprop(lr=lr)
+    opt = optimizers.RMSprop(learning_rate=lr,
+                             rho=0.9,
+                             momentum=0.1,
+                             epsilon=1e-07,
+                             centered=True,
+                             name='RMSprop')
     x_train, x_val, y_train, y_val = train_test_split(df[x_col], df[y_col],
                                                       test_size=test_size,
                                                       shuffle=True,
@@ -118,7 +124,24 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
                                 save_best_only=True,
                                 save_weights_only=True)
     early_stopping = EarlyStopping(patience=10)
-    callbacks = [model_chk, early_stopping]
+    learning_rate_reduction = ReduceLROnPlateau(
+        monitor='loss',  # Quantity to be monitored.
+        factor=0.25,
+        # Factor by which the learning rate will be reduced. new_lr = lr * factor
+        patience=2,
+        # The number of epochs with no improvement after which learning rate will be reduced.
+        verbose=1,  # 0: quiet - 1: update messages.
+        mode="auto",
+        # {auto, min, max}. In min mode, lr will be reduced when the quantity monitored has stopped decreasing;
+        # in the max mode it will be reduced when the quantity monitored has stopped increasing;
+        # in auto mode, the direction is automatically inferred from the name of the monitored quantity.
+        min_delta=0.0001,
+        # threshold for measuring the new optimum, to only focus on significant changes.
+        cooldown=0,
+        # number of epochs to wait before resuming normal operation after learning rate (lr) has been reduced.
+        min_lr=0.00001  # lower bound on the learning rate.
+    )
+    callbacks = [learning_rate_reduction, model_chk, early_stopping]
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=step_size_train,
                                   validation_data=valid_generator,
