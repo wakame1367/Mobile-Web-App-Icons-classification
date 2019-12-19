@@ -22,15 +22,12 @@ if not log_path.exists():
     log_path.mkdir()
 
 # common using mobile app UI labels
-USE_LABELS = ['arrow_left', 'notifications', 'play', 'info', 'mail',
-              'globe', 'upload', 'music', 'close', 'user', 'settings', 'home',
-              'fast_forward', 'trash', 'question', 'map', 'eye', 'check_mark',
-              'sort', 'overflow_menu', 'minimize', 'save', 'delete',
-              'maximize', 'download', 'share', 'external_link', 'thumbs_up',
-              'search', 'arrow_right', 'crop', 'camera', 'refresh', 'add',
-              'volume', 'favorite', 'menu', 'edit', 'fab', 'link', 'arrow_up',
-              'arrow_down', 'tag', 'warning', 'bookmark', 'cart', 'cloud',
-              'filter', 'other']
+USE_LABELS = ['arrow_left', 'notifications', 'info', 'upload', 'close',
+              'settings', 'home', 'trash', 'question', 'eye', 'check_mark',
+              'sort', 'overflow_menu', 'delete', 'download', 'share',
+              'external_link', 'search', 'arrow_right', 'crop', 'refresh',
+              'add', 'favorite', 'menu', 'edit', 'link', 'tag', 'warning',
+              'bookmark', 'filter']
 
 
 def plot_history(history):
