@@ -39,6 +39,7 @@ def plot_history(history):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
     plt.savefig(str(log_path / "Plot_accuracy_values.jpg"))
+    plt.close()
 
     # Plot training & validation loss values
     plt.plot(history.history['loss'])
@@ -48,6 +49,7 @@ def plot_history(history):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
     plt.savefig(str(log_path / "Plot_loss_values.jpg"))
+    plt.close()
 
 
 def train(model, preprocess_func, df, x_col, y_col, is_test=True):
