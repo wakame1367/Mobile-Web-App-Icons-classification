@@ -1,10 +1,12 @@
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from tensorflow.keras.applications import resnet_v2
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.applications import mobilenet, resnet_v2
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
 from dataset import create_df
 from model import build_model
 
@@ -14,12 +16,15 @@ dataset_path = Path("./resources")
 image_root_path = dataset_path / "common-mobile-web-app-icons"
 log_path = dataset_path / "logs"
 # common using mobile app UI labels
-USE_LABELS = ['arrow_left', 'notifications', 'info', 'upload', 'close',
-              'settings', 'home', 'trash', 'question', 'eye', 'check_mark',
-              'sort', 'overflow_menu', 'delete', 'download', 'share',
-              'external_link', 'search', 'arrow_right', 'crop', 'refresh',
-              'add', 'favorite', 'menu', 'edit', 'link', 'tag', 'warning',
-              'bookmark', 'filter']
+USE_LABELS = ['arrow_left', 'notifications', 'play', 'info', 'mail',
+              'globe', 'upload', 'music', 'close', 'user', 'settings', 'home',
+              'fast_forward', 'trash', 'question', 'map', 'eye', 'check_mark',
+              'sort', 'overflow_menu', 'minimize', 'save', 'delete',
+              'maximize', 'download', 'share', 'external_link', 'thumbs_up',
+              'search', 'arrow_right', 'crop', 'camera', 'refresh', 'add',
+              'volume', 'favorite', 'menu', 'edit', 'fab', 'link', 'arrow_up',
+              'arrow_down', 'tag', 'warning', 'bookmark', 'cart', 'cloud',
+              'filter', 'other']
 
 
 def main():
@@ -49,7 +54,7 @@ def main():
                                        input_shape=input_shapes)
     model = build_model(base_model, n_classes=num_classes)
 
-    model.load_weights(str(log_path / "weights.01-2.25.hdf5"))
+    model.load_weights(str(log_path / "weights.16-0.38.hdf5"))
 
     x_train, x_val, y_train, y_val = train_test_split(df[x_col_name],
                                                       df[y_col_name],
@@ -57,8 +62,7 @@ def main():
                                                       shuffle=True,
                                                       random_state=random_state,
                                                       stratify=df[y_col_name])
-    valid_gen = ImageDataGenerator(
-        preprocessing_function=resnet_v2.preprocess_input)
+    valid_gen = ImageDataGenerator(rescale=1. / 255)
     valid_generator = valid_gen.flow_from_dataframe(pd.concat([x_val, y_val],
                                                               axis=1),
                                                     x_col=x_col_name,
@@ -73,7 +77,6 @@ def main():
     print('Confusion Matrix')
     print(confusion_matrix(valid_generator.classes, y_pred))
     print('Classification Report')
-    target_names = ['Cats', 'Dogs', 'Horse']
     print(classification_report(valid_generator.classes, y_pred))
 
 

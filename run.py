@@ -2,9 +2,10 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from tensorflow.keras.metrics import Precision, Recall
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers
-from tensorflow.keras.applications import resnet_v2
+from tensorflow.keras.applications import mobilenet, resnet_v2
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, \
     ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -22,12 +23,15 @@ if not log_path.exists():
     log_path.mkdir()
 
 # common using mobile app UI labels
-USE_LABELS = ['arrow_left', 'notifications', 'info', 'upload', 'close',
-              'settings', 'home', 'trash', 'question', 'eye', 'check_mark',
-              'sort', 'overflow_menu', 'delete', 'download', 'share',
-              'external_link', 'search', 'arrow_right', 'crop', 'refresh',
-              'add', 'favorite', 'menu', 'edit', 'link', 'tag', 'warning',
-              'bookmark', 'filter']
+USE_LABELS = ['arrow_left', 'notifications', 'play', 'info', 'mail',
+              'globe', 'upload', 'music', 'close', 'user', 'settings', 'home',
+              'fast_forward', 'trash', 'question', 'map', 'eye', 'check_mark',
+              'sort', 'overflow_menu', 'minimize', 'save', 'delete',
+              'maximize', 'download', 'share', 'external_link', 'thumbs_up',
+              'search', 'arrow_right', 'crop', 'camera', 'refresh', 'add',
+              'volume', 'favorite', 'menu', 'edit', 'fab', 'link', 'arrow_up',
+              'arrow_down', 'tag', 'warning', 'bookmark', 'cart', 'cloud',
+              'filter', 'other']
 
 
 def plot_history(history):
@@ -63,15 +67,10 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
     target_size = (height, width)
     num_channels = 3
     epochs = 100
-    lr = 0.002
+    lr = 0.0001
     batch_size = 32
     test_size = 0.2
-    opt = optimizers.RMSprop(learning_rate=lr,
-                             rho=0.9,
-                             momentum=0.1,
-                             epsilon=1e-07,
-                             centered=True,
-                             name='RMSprop')
+    opt = optimizers.Adam(lr=lr)
     x_train, x_val, y_train, y_val = train_test_split(df[x_col], df[y_col],
                                                       test_size=test_size,
                                                       shuffle=True,
@@ -92,7 +91,7 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
                                    height_shift_range=.15,
                                    horizontal_flip=True,
                                    zoom_range=0.5,
-                                   preprocessing_function=preprocess_func)
+                                   rescale=1./255)
     train_generator = train_gen.flow_from_dataframe(
         pd.concat([x_train, y_train],
                   axis=1),
@@ -102,8 +101,7 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
         batch_size=batch_size,
         class_mode='categorical',
         subset='training')
-    valid_gen = ImageDataGenerator(
-        preprocessing_function=preprocess_func)
+    valid_gen = ImageDataGenerator(rescale=1./255)
     valid_generator = valid_gen.flow_from_dataframe(pd.concat([x_val, y_val],
                                                               axis=1),
                                                     x_col=x_col,
@@ -114,7 +112,7 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
                                                     subset='training')
     model.compile(optimizer=opt,
                   loss='categorical_crossentropy',
-                  metrics=['accuracy'])
+                  metrics=[Precision(), Recall()])
     step_size_train = train_generator.n // train_generator.batch_size
     step_size_valid = valid_generator.n // valid_generator.batch_size
     chk_filename = "weights.{epoch:02d}-{val_loss:.2f}.hdf5"
@@ -140,7 +138,7 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
         # number of epochs to wait before resuming normal operation after learning rate (lr) has been reduced.
         min_lr=0.00001  # lower bound on the learning rate.
     )
-    callbacks = [learning_rate_reduction, model_chk, early_stopping]
+    callbacks = [model_chk, early_stopping]
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=step_size_train,
                                   validation_data=valid_generator,
@@ -177,7 +175,7 @@ def main():
         drop_index = df[df[y_col_name] == label].index
         drop_indexes = drop_indexes.union(drop_index)
     df.drop(index=drop_indexes, inplace=True)
-    train(preprocess_func=resnet_v2.preprocess_input, df=df, model=model,
+    train(preprocess_func=mobilenet.preprocess_input, df=df, model=model,
           x_col=x_col_name, y_col=y_col_name, is_test=False)
 
 

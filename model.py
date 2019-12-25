@@ -3,7 +3,7 @@ from tensorflow.keras.models import Model
 
 
 def build_model(base_model, n_classes):
-    base_model.trainable = False
+    # base_model.trainable = False
     x = GlobalAveragePooling2D()(base_model.output)
     x = Dense(1024, activation="relu")(x)
     x = Dropout(0.25)(x)
