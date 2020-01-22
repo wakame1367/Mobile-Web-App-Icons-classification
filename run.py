@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers
-from tensorflow.keras.applications import mobilenet, resnet_v2
+from tensorflow.keras.applications import resnet_v2
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.metrics import Precision, Recall
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -158,7 +158,7 @@ def main():
         drop_index = df[df[y_col_name] == label].index
         drop_indexes = drop_indexes.union(drop_index)
     df.drop(index=drop_indexes, inplace=True)
-    train(preprocess_func=mobilenet.preprocess_input, df=df, model=model,
+    train(preprocess_func=resnet_v2.preprocess_input, df=df, model=model,
           x_col=x_col_name, y_col=y_col_name, is_test=False)
 
 
