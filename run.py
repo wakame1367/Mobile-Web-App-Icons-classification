@@ -160,7 +160,8 @@ def main():
         df.to_csv(df_path, index=False)
     x_col_name = "image_path"
     y_col_name = "class"
-    num_classes = len(USE_LABELS)
+    labels = set(df[y_col_name].unique())
+    num_classes = len(labels)
     width, height = 224, 224
     num_channels = 3
     input_shapes = (height, width, num_channels)
