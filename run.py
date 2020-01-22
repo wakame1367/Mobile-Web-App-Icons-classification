@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -9,7 +10,6 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.metrics import Precision, Recall
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-from dataset import create_df
 from model import build_model
 
 dataset_path = Path("./resources")
@@ -133,19 +133,34 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
     # model.evaluate_generator(valid_generator)
 
 
+def get_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("csv_path", type=str)
+    parser.add_argument("--x_col_name", type=str, default="image_path")
+    parser.add_argument("--y_col_name", type=str, default="class")
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--width", type=int, default=224)
+    parser.add_argument("--height", type=int, default=224)
+    parser.add_argument("--channels", type=int, default=3)
+    parser.add_argument("--learning_rate", type=float, default=0.0001)
+    parser.add_argument("--test_size", type=float, default=0.2)
+    _args = parser.parse_args()
+    return _args
+
+
 def main():
-    df_path = dataset_path / "data.csv"
-    if df_path.exists():
-        df = pd.read_csv(df_path)
+    args = get_arguments()
+    df_path = Path(args.csv_path)
+    if not df_path.exists():
+        raise FileExistsError("{}".format(df_path))
     else:
-        df = create_df(root_path=image_root_path)
-        df.to_csv(df_path, index=False)
-    x_col_name = "image_path"
-    y_col_name = "class"
+        df = pd.read_csv(df_path)
+    x_col_name = args.x_col_name
+    y_col_name = args.y_col_name
     labels = set(df[y_col_name].unique())
     num_classes = len(labels)
-    width, height = 224, 224
-    num_channels = 3
+    width, height = args.width, args.height
+    num_channels = args.channels
     input_shapes = (height, width, num_channels)
     base_model = resnet_v2.ResNet101V2(include_top=False,
                                        weights='imagenet',
