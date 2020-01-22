@@ -2,12 +2,11 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from tensorflow.keras.metrics import Precision, Recall
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers
 from tensorflow.keras.applications import mobilenet, resnet_v2
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, \
-    ReduceLROnPlateau
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+from tensorflow.keras.metrics import Precision, Recall
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from dataset import create_df
@@ -91,7 +90,7 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
                                    height_shift_range=.15,
                                    horizontal_flip=True,
                                    zoom_range=0.5,
-                                   rescale=1./255)
+                                   rescale=1. / 255)
     train_generator = train_gen.flow_from_dataframe(
         pd.concat([x_train, y_train],
                   axis=1),
@@ -101,7 +100,7 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
         batch_size=batch_size,
         class_mode='categorical',
         subset='training')
-    valid_gen = ImageDataGenerator(rescale=1./255)
+    valid_gen = ImageDataGenerator(rescale=1. / 255)
     valid_generator = valid_gen.flow_from_dataframe(pd.concat([x_val, y_val],
                                                               axis=1),
                                                     x_col=x_col,
@@ -121,23 +120,6 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
                                 save_best_only=True,
                                 save_weights_only=True)
     early_stopping = EarlyStopping(patience=10)
-    learning_rate_reduction = ReduceLROnPlateau(
-        monitor='loss',  # Quantity to be monitored.
-        factor=0.25,
-        # Factor by which the learning rate will be reduced. new_lr = lr * factor
-        patience=2,
-        # The number of epochs with no improvement after which learning rate will be reduced.
-        verbose=1,  # 0: quiet - 1: update messages.
-        mode="auto",
-        # {auto, min, max}. In min mode, lr will be reduced when the quantity monitored has stopped decreasing;
-        # in the max mode it will be reduced when the quantity monitored has stopped increasing;
-        # in auto mode, the direction is automatically inferred from the name of the monitored quantity.
-        min_delta=0.0001,
-        # threshold for measuring the new optimum, to only focus on significant changes.
-        cooldown=0,
-        # number of epochs to wait before resuming normal operation after learning rate (lr) has been reduced.
-        min_lr=0.00001  # lower bound on the learning rate.
-    )
     callbacks = [model_chk, early_stopping]
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=step_size_train,
