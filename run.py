@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -57,7 +58,8 @@ def plot_history(history):
     plt.close()
 
 
-def prepare_generator(df, x_col, y_col, width, height, batch_size, test_size):
+def prepare_generator(df, x_col, y_col, width, height, batch_size, test_size,
+                      classes):
     x_train, x_val, y_train, y_val = train_test_split(df[x_col],
                                                       df[y_col],
                                                       test_size=test_size,
@@ -78,7 +80,8 @@ def prepare_generator(df, x_col, y_col, width, height, batch_size, test_size):
         target_size=(width, height),
         batch_size=batch_size,
         class_mode='categorical',
-        subset='training')
+        subset='training',
+        classes=classes)
     valid_gen = ImageDataGenerator(rescale=1. / 255)
     valid_generator = valid_gen.flow_from_dataframe(
         pd.concat([x_val, y_val],
@@ -88,7 +91,8 @@ def prepare_generator(df, x_col, y_col, width, height, batch_size, test_size):
         target_size=(width, height),
         batch_size=batch_size,
         class_mode='categorical',
-        subset='training')
+        subset='training',
+        classes=classes)
     return train_generator, valid_generator
 
 
@@ -118,9 +122,36 @@ def train(train_generator, valid_generator, model, lr, epochs):
     # model.evaluate_generator(valid_generator)
 
 
+class LabelParser:
+    def __init__(self, labels):
+        self.labels = labels
+        self.icon_name2label = {}
+        self.model_use = "use"
+        self.model_label = "label"
+        self.set_labels()
+        self.label2icon_name = {label: icon_name for icon_name, label in
+                                self.icon_name2label.items()}
+
+    def set_labels(self):
+        for icon_name, values in self.labels.items():
+            model_use = values.get(self.model_use)
+            if model_use:
+                label = values.get(self.model_label)
+                self.icon_name2label[icon_name] = label
+
+
+def get_classes(label_path):
+    with open(label_path) as f:
+        labels = json.load(f)
+    lp = LabelParser(labels)
+    classes = list(lp.icon_name2label.keys())
+    return classes
+
+
 def get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("csv_path", type=str)
+    parser.add_argument("label_path", type=str)
     parser.add_argument("--x_col_name", type=str, default="image_path")
     parser.add_argument("--y_col_name", type=str, default="class")
     parser.add_argument("--epochs", type=int, default=10)
@@ -141,10 +172,17 @@ def main():
         raise FileExistsError("{}".format(df_path))
     else:
         df = pd.read_csv(df_path)
+
+    labels_path = Path(args.label_path)
+    if not labels_path.exists():
+        raise FileExistsError("{}".format(labels_path))
+    else:
+        classes = get_classes(labels_path)
+
     x_col_name = args.x_col_name
     y_col_name = args.y_col_name
     labels = set(df[y_col_name].unique())
-    num_classes = len(labels)
+    num_classes = len(USE_LABELS)
     width, height = args.width, args.height
     num_channels = args.channels
     input_shapes = (height, width, num_channels)
@@ -169,7 +207,8 @@ def main():
                                                          width=width,
                                                          height=height,
                                                          batch_size=batch_size,
-                                                         test_size=test_size)
+                                                         test_size=test_size,
+                                                         classes=classes)
     train(train_generator=train_generator, valid_generator=valid_generator,
           model=model, epochs=epochs, lr=learning_rate)
 
