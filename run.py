@@ -12,6 +12,7 @@ from tensorflow.keras.metrics import Precision, Recall
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from model import build_model
+from random_eraser import get_random_eraser
 
 dataset_path = Path("./resources")
 # Download from Kaggle Dataset and place it in a suitable directory.
@@ -66,11 +67,14 @@ def prepare_generator(df, x_col, y_col, width, height, batch_size, test_size,
                                                       shuffle=True,
                                                       random_state=SEED,
                                                       stratify=df[y_col])
+    cutout = get_random_eraser(v_l=0, v_h=1, pixel_level=True)
     train_gen = ImageDataGenerator(rotation_range=45,
                                    width_shift_range=.15,
                                    height_shift_range=.15,
                                    horizontal_flip=True,
+                                   vertical_flip=True,
                                    zoom_range=0.5,
+                                   preprocessing_function=cutout,
                                    rescale=1. / 255)
     train_generator = train_gen.flow_from_dataframe(
         pd.concat([x_train, y_train],
