@@ -21,6 +21,8 @@ log_path = dataset_path / "logs"
 if not log_path.exists():
     log_path.mkdir()
 
+SEED = 1234
+
 # common using mobile app UI labels
 USE_LABELS = ['arrow_left', 'notifications', 'play', 'info', 'mail',
               'globe', 'upload', 'music', 'close', 'user', 'settings', 'home',
@@ -55,36 +57,13 @@ def plot_history(history):
     plt.close()
 
 
-def train(model, preprocess_func, df, x_col, y_col, is_test=True):
-    # n_splits = 4
-    random_state = 1224
-    # multiple class and
-    # skf = StratifiedKFold(n_splits=n_splits, shuffle=True,
-    #                       random_state=random_state)
-
-    width, height = 224, 224
-    target_size = (height, width)
-    num_channels = 3
-    epochs = 100
-    lr = 0.0001
-    batch_size = 32
-    test_size = 0.2
-    opt = optimizers.Adam(lr=lr)
-    x_train, x_val, y_train, y_val = train_test_split(df[x_col], df[y_col],
+def prepare_generator(df, x_col, y_col, width, height, batch_size, test_size):
+    x_train, x_val, y_train, y_val = train_test_split(df[x_col],
+                                                      df[y_col],
                                                       test_size=test_size,
                                                       shuffle=True,
-                                                      random_state=random_state,
+                                                      random_state=SEED,
                                                       stratify=df[y_col])
-    # for fold_idx, (train_idx, val_idx) in enumerate(skf.split(df[x_col],
-    #                                                           df[y_col])):
-    #     print("Fold: {}".format(fold_idx))
-    #     print(df.loc[train_idx].shape)
-    #     print(df.loc[val_idx].shape)
-    if is_test:
-        # May not be included in all class
-        # train_idx = np.random.choice(x_train, batch_size * 200)
-        # val_idx = np.random.choice(val_idx, batch_size * 100)
-        pass
     train_gen = ImageDataGenerator(rotation_range=45,
                                    width_shift_range=.15,
                                    height_shift_range=.15,
@@ -96,19 +75,25 @@ def train(model, preprocess_func, df, x_col, y_col, is_test=True):
                   axis=1),
         x_col=x_col,
         y_col=y_col,
-        target_size=target_size,
+        target_size=(width, height),
         batch_size=batch_size,
         class_mode='categorical',
         subset='training')
     valid_gen = ImageDataGenerator(rescale=1. / 255)
-    valid_generator = valid_gen.flow_from_dataframe(pd.concat([x_val, y_val],
-                                                              axis=1),
-                                                    x_col=x_col,
-                                                    y_col=y_col,
-                                                    target_size=target_size,
-                                                    batch_size=batch_size,
-                                                    class_mode='categorical',
-                                                    subset='training')
+    valid_generator = valid_gen.flow_from_dataframe(
+        pd.concat([x_val, y_val],
+                  axis=1),
+        x_col=x_col,
+        y_col=y_col,
+        target_size=(width, height),
+        batch_size=batch_size,
+        class_mode='categorical',
+        subset='training')
+    return train_generator, valid_generator
+
+
+def train(train_generator, valid_generator, model, lr, epochs):
+    opt = optimizers.Adam(lr=lr)
     model.compile(optimizer=opt,
                   loss='categorical_crossentropy',
                   metrics=[Precision(), Recall()])
@@ -142,6 +127,7 @@ def get_arguments():
     parser.add_argument("--width", type=int, default=224)
     parser.add_argument("--height", type=int, default=224)
     parser.add_argument("--channels", type=int, default=3)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.0001)
     parser.add_argument("--test_size", type=float, default=0.2)
     _args = parser.parse_args()
@@ -162,6 +148,10 @@ def main():
     width, height = args.width, args.height
     num_channels = args.channels
     input_shapes = (height, width, num_channels)
+    batch_size = args.batch_size
+    test_size = args.test_size
+    epochs = args.epochs
+    learning_rate = args.learning_rate
     base_model = resnet_v2.ResNet101V2(include_top=False,
                                        weights='imagenet',
                                        input_shape=input_shapes)
@@ -173,8 +163,15 @@ def main():
         drop_index = df[df[y_col_name] == label].index
         drop_indexes = drop_indexes.union(drop_index)
     df.drop(index=drop_indexes, inplace=True)
-    train(preprocess_func=resnet_v2.preprocess_input, df=df, model=model,
-          x_col=x_col_name, y_col=y_col_name, is_test=False)
+    train_generator, valid_generator = prepare_generator(df=df,
+                                                         x_col=x_col_name,
+                                                         y_col=y_col_name,
+                                                         width=width,
+                                                         height=height,
+                                                         batch_size=batch_size,
+                                                         test_size=test_size)
+    train(train_generator=train_generator, valid_generator=valid_generator,
+          model=model, epochs=epochs, lr=learning_rate)
 
 
 if __name__ == '__main__':
