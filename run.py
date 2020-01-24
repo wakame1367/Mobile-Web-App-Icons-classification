@@ -67,7 +67,7 @@ def prepare_generator(df, x_col, y_col, width, height, batch_size, test_size,
                                                       shuffle=True,
                                                       random_state=SEED,
                                                       stratify=df[y_col])
-    cutout = get_random_eraser(v_l=0, v_h=1, pixel_level=True)
+    cutout = get_random_eraser(p=0.9, v_l=0, v_h=1, pixel_level=True)
     train_gen = ImageDataGenerator(rotation_range=45,
                                    width_shift_range=.15,
                                    height_shift_range=.15,
